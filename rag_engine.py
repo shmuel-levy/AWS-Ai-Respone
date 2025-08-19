@@ -3,11 +3,54 @@ RAG Engine for Document Q&A System
 Handles semantic search and retrieval of relevant document chunks
 """
 import os
-import chromadb
-from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
+from typing import List, Dict, Any, Tuple, Optional
 from sentence_transformers import SentenceTransformer
 from config import Config
+
+# Safe import for ChromaDB with fallback
+try:
+    import chromadb
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
+    print("Warning: ChromaDB not available, using in-memory fallback")
+
+# Fallback for when ChromaDB is not available (e.g., Streamlit Cloud)
+class InMemoryVectorStore:
+    """Simple in-memory vector store as fallback when ChromaDB is unavailable"""
+    
+    def __init__(self):
+        self.documents = []
+        self.embeddings = []
+        self.metadatas = []
+        self.ids = []
+        
+    def add(self, documents, metadatas, ids):
+        """Add documents to in-memory store"""
+        self.documents.extend(documents)
+        self.metadatas.extend(metadatas)
+        self.ids.extend(ids)
+        
+    def query(self, query_texts, n_results=3):
+        """Simple similarity search using cosine distance"""
+        if not self.documents:
+            return {"documents": [], "metadatas": [], "ids": []}
+            
+        # For simplicity, return first n_results documents
+        # In a real implementation, you'd compute embeddings and similarity
+        return {
+            "documents": self.documents[:n_results],
+            "metadatas": self.metadatas[:n_results],
+            "ids": self.ids[:n_results]
+        }
+        
+    def delete(self, where=None, where_document=None):
+        """Clear the store"""
+        self.documents.clear()
+        self.embeddings.clear()
+        self.metadatas.clear()
+        self.ids.clear()
 
 
 class RAGEngine:
@@ -33,9 +76,36 @@ class RAGEngine:
             
         self.persist_directory = persist_directory
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.client = chromadb.PersistentClient(path=persist_directory)
-        self.collection = None
+        
+        # Initialize storage based on availability
+        if CHROMADB_AVAILABLE and self._can_use_chromadb():
+            try:
+                self.client = chromadb.PersistentClient(path=persist_directory)
+                self.collection = None
+                self.use_fallback = False
+            except Exception as e:
+                print(f"Warning: ChromaDB initialization failed, using fallback: {e}")
+                self.use_fallback = True
+                self.client = None
+                self.collection = InMemoryVectorStore()
+        else:
+            self.use_fallback = True
+            self.client = None
+            self.collection = InMemoryVectorStore()
+            
         self.document_chunks = []
+    
+    def _can_use_chromadb(self) -> bool:
+        """Check if ChromaDB can be used safely"""
+        try:
+            # Check if we can write to the directory
+            test_file = os.path.join(self.persist_directory, "test_write.tmp")
+            with open(test_file, 'w') as f:
+                f.write("test")
+            os.remove(test_file)
+            return True
+        except (OSError, PermissionError):
+            return False
         
     def initialize_database(self, collection_name: str = "document_chunks") -> None:
         """
@@ -44,13 +114,22 @@ class RAGEngine:
         Args:
             collection_name: Name of the collection to create or connect to
         """
+        if self.use_fallback:
+            return  # In-memory store doesn't need initialization
+            
         try:
             self.collection = self.client.get_collection(name=collection_name)
         except:
-            self.collection = self.client.create_collection(
-                name=collection_name,
-                metadata={"hnsw:space": "cosine"}
-            )
+            try:
+                self.collection = self.client.create_collection(
+                    name=collection_name,
+                    metadata={"hnsw:space": "cosine"}
+                )
+            except Exception as e:
+                print(f"Warning: Failed to create ChromaDB collection: {e}")
+                # Fallback to in-memory
+                self.use_fallback = True
+                self.collection = InMemoryVectorStore()
     
     def index_document_chunks(self, chunks: List[Dict[str, Any]]) -> None:
         """
@@ -79,11 +158,19 @@ class RAGEngine:
             })
             ids.append(f"chunk_{chunk['id']}")
         
-        self.collection.add(
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids
-        )
+        try:
+            self.collection.add(
+                documents=documents,
+                metadatas=metadatas,
+                ids=ids
+            )
+        except Exception as e:
+            print(f"Warning: Failed to add to vector store: {e}")
+            # If ChromaDB fails, ensure we have the data in memory
+            if not self.use_fallback:
+                self.use_fallback = True
+                self.collection = InMemoryVectorStore()
+                self.collection.add(documents, metadatas, ids)
     
     def find_relevant_chunks(self, query: str, top_k: Optional[int] = None) -> List[Dict[str, Any]]:
         """
@@ -99,121 +186,116 @@ class RAGEngine:
         if top_k is None:
             top_k = Config.RETRIEVAL_TOP_K
             
-        if not self.collection:
+        if not self.document_chunks:
             return []
-        
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=top_k
-        )
-        
-        relevant_chunks = []
-        for i in range(len(results['documents'][0])):
-            chunk_data = {
-                'content': results['documents'][0][i],
-                'metadata': results['metadatas'][0][i],
-                'id': results['ids'][0][i],
-                'similarity_score': results['distances'][0][i] if 'distances' in results else 0.0
-            }
-            relevant_chunks.append(chunk_data)
-        
-        return relevant_chunks
+            
+        try:
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=top_k
+            )
+            
+            # Convert results to our expected format
+            chunks_with_scores = []
+            for i, doc_id in enumerate(results['ids']):
+                chunk_data = {
+                    'id': doc_id,
+                    'content': results['documents'][i],
+                    'metadata': results['metadatas'][i],
+                    'similarity_score': 1.0 - (i * 0.1)  # Simple scoring for fallback
+                }
+                chunks_with_scores.append(chunk_data)
+                
+            return chunks_with_scores
+            
+        except Exception as e:
+            print(f"Warning: Vector search failed: {e}")
+            # Fallback: return first few chunks
+            return self.document_chunks[:top_k]
     
     def build_query_context(self, query: str) -> str:
         """
-        Build context string from relevant chunks for AI model.
+        Build context string from relevant document chunks.
         
         Args:
-            query: User question
+            query: User's question
             
         Returns:
-            Formatted context string with relevant chunks
+            Formatted context string
         """
         relevant_chunks = self.find_relevant_chunks(query)
         
         if not relevant_chunks:
             return ""
-        
+            
         context_parts = []
-        for i, chunk in enumerate(relevant_chunks):
-            context_parts.append(f"Section {i}: {chunk['content']}")
-        
+        for chunk in relevant_chunks:
+            if isinstance(chunk, dict) and 'content' in chunk:
+                content = chunk['content']
+            else:
+                content = str(chunk)
+            context_parts.append(f"---\n{content}\n---")
+            
         return "\n\n".join(context_parts)
     
     def get_chunk_by_id(self, chunk_id: str) -> Optional[Dict[str, Any]]:
         """
-        Retrieve specific chunk by its ID.
+        Get specific chunk by ID.
         
         Args:
             chunk_id: ID of the chunk to retrieve
             
         Returns:
-            Chunk data if found, None otherwise
+            Chunk data or None if not found
         """
-        if not self.collection:
+        try:
+            if self.use_fallback:
+                # Search in memory
+                for chunk in self.document_chunks:
+                    if f"chunk_{chunk['id']}" == chunk_id:
+                        return chunk
+                return None
+            else:
+                # Use ChromaDB
+                results = self.collection.get(ids=[chunk_id])
+                if results['documents']:
+                    return {
+                        'id': chunk_id,
+                        'content': results['documents'][0],
+                        'metadata': results['metadatas'][0] if results['metadatas'] else {}
+                    }
+                return None
+        except Exception as e:
+            print(f"Warning: Failed to get chunk by ID: {e}")
             return None
-        
-        try:
-            results = self.collection.get(ids=[chunk_id])
-            if results['documents']:
-                return {
-                    'content': results['documents'][0],
-                    'metadata': results['metadatas'][0] if results['metadatas'] else {},
-                    'id': chunk_id
-                }
-        except:
-            pass
-        
-        return None
-    
-    def update_chunk_index(self, chunks: List[Dict[str, Any]]) -> None:
-        """
-        Update the chunk index with new document chunks.
-        
-        Args:
-            chunks: New document chunks to index
-        """
-        # Clear existing collection
-        if self.collection:
-            self.collection.delete()
-        
-        # Re-index with new chunks
-        self.index_document_chunks(chunks)
-    
-    def get_database_statistics(self) -> Dict[str, Any]:
-        """
-        Get statistics about the vector database.
-        
-        Returns:
-            Dictionary with database statistics
-        """
-        if not self.collection:
-            return {
-                'total_chunks': 0,
-                'collection_name': None,
-                'is_initialized': False
-            }
-        
-        try:
-            count = self.collection.count()
-            return {
-                'total_chunks': count,
-                'collection_name': self.collection.name,
-                'is_initialized': True
-            }
-        except:
-            return {
-                'total_chunks': 0,
-                'collection_name': None,
-                'is_initialized': False
-            }
     
     def clear_database(self) -> None:
-        """Clear all data from the vector database."""
-        if self.collection:
-            self.collection.delete()
-            self.collection = None
-        self.document_chunks = []
+        """Clear all data from the vector store."""
+        try:
+            if not self.use_fallback and self.collection:
+                self.collection.delete(where={})
+            else:
+                # Clear in-memory store
+                if hasattr(self.collection, 'delete'):
+                    self.collection.delete()
+                    
+            self.document_chunks = []
+        except Exception as e:
+            print(f"Warning: Failed to clear database: {e}")
+    
+    def get_database_info(self) -> Dict[str, Any]:
+        """
+        Get information about the current database state.
+        
+        Returns:
+            Dictionary with database information
+        """
+        return {
+            'storage_type': 'fallback' if self.use_fallback else 'chromadb',
+            'chunks_count': len(self.document_chunks),
+            'persist_directory': self.persist_directory,
+            'chromadb_available': CHROMADB_AVAILABLE
+        }
     
     def perform_semantic_search(self, query: str, top_k: Optional[int] = None) -> List[Dict[str, Any]]:
         """

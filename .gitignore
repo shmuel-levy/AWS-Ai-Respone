@@ -56,9 +56,6 @@ documents/*.pdf
 documents/*.txt
 *.log
 
-# Streamlit
-.streamlit/
-
 # Styles folder (keep CSS files)
 # styles/
 
