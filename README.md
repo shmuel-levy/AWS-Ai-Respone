@@ -5,6 +5,7 @@ A web-based question-answering system that uses Retrieval-Augmented Generation (
 ## Features
 
 - **RAG Implementation**: Automatic document segmentation into 18 parts
+- **PDF Support**: Native support for PDF documents with text extraction
 - **Smart Retrieval**: Relevant section identification for each query
 - **Gemini AI Integration**: Powered by Google's latest AI model
 - **Web Interface**: Clean Streamlit-based UI
