@@ -40,7 +40,7 @@ def process_uploaded_document(file_path: str):
         List of document chunks with metadata, or None if processing fails
     """
     if not CHROMA_AVAILABLE:
-        st.error("❌ Document processing is not available. Please check your installation.")
+        st.error("Document processing is not available. Please check your installation.")
         return None
         
     try:
@@ -88,12 +88,12 @@ def load_css_files():
 
 def render_header():
     """Render the main header section."""
-    st.markdown('<h1 class="main-header">📚 Document Q&A System</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">Document Q&A System</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Ask questions about your documents using AI-powered search</p>', unsafe_allow_html=True)
 
 def render_upload_section():
     """Render the document upload section."""
-    st.markdown("### 📄 Upload Document")
+    st.markdown("### Upload Document")
     
     uploaded_file = st.file_uploader(
         "Choose a PDF or TXT file",
@@ -112,7 +112,7 @@ def render_upload_section():
             chunks = process_uploaded_document(temp_file_path)
         
         if chunks:
-            st.success(f"✅ Document processed successfully!")
+            st.success("Document processed successfully!")
             st.info(f"Created {len(chunks)} semantic chunks")
             
             # Clean up temp file
@@ -121,7 +121,7 @@ def render_upload_section():
             except:
                 pass
         else:
-            st.error("❌ Error processing document")
+            st.error("Error processing document")
             
             # Clean up temp file
             try:
@@ -131,10 +131,10 @@ def render_upload_section():
 
 def render_question_section():
     """Render the question input section."""
-    st.markdown("### ❓ Ask a Question")
+    st.markdown("### Ask a Question")
     
     if not st.session_state.document_loaded:
-        st.info("📝 Please upload a document first")
+        st.info("Please upload a document first")
         return
     
     question = st.text_input(
@@ -143,16 +143,16 @@ def render_question_section():
         help="Ask any question about the uploaded document"
     )
     
-    if st.button("🔍 Search Answer", type="primary"):
+    if st.button("Search Answer", type="primary"):
         if question.strip():
             process_question(question)
         else:
-            st.warning("⚠️ Please type a question")
+            st.warning("Please type a question")
 
 def process_question(question: str):
     """Process user question and generate answer."""
     if not st.session_state.document_loaded:
-        st.error("❌ No document available")
+        st.error("No document available")
         return
     
     try:
@@ -172,7 +172,7 @@ def process_question(question: str):
         relevant_chunks = st.session_state.rag_engine.find_relevant_chunks(question)
         
         if not relevant_chunks:
-            st.warning("⚠️ No relevant chunks found")
+            st.warning("No relevant chunks found")
             return
         
         # Build context
@@ -186,15 +186,15 @@ def process_question(question: str):
         display_answer(question, answer, relevant_chunks)
         
     except Exception as e:
-        st.error(f"❌ Error processing question: {str(e)}")
+        st.error(f"Error processing question: {str(e)}")
 
 def display_answer(question: str, answer: str, relevant_chunks: list):
     """Display the generated answer and relevant context."""
-    st.markdown("### 💡 Answer")
+    st.markdown("### Answer")
     st.markdown(answer)
     
     # Display relevant context
-    st.markdown("### 📖 Relevant Context")
+    st.markdown("### Relevant Context")
     
     for i, chunk in enumerate(relevant_chunks):
         with st.expander(f"Chunk {i+1} ({chunk.get('word_count', 'N/A')} words)"):
@@ -204,29 +204,29 @@ def display_answer(question: str, answer: str, relevant_chunks: list):
 def render_sidebar():
     """Render the sidebar with additional information."""
     with st.sidebar:
-        st.markdown("### ℹ️ Information")
+        st.markdown("### Information")
         
         if CHROMA_AVAILABLE:
-            st.success("🚀 Full Mode Active")
+            st.success("Full Mode Active")
             st.info("All features available")
         else:
-            st.warning("⚠️ Limited Mode")
+            st.warning("Limited Mode")
             st.info("Some features may be limited")
         
         st.markdown("---")
-        st.markdown("### 🔧 Features")
-        st.markdown("- 📄 PDF and TXT support")
-        st.markdown("- 🔍 Semantic search")
-        st.markdown("- 🤖 AI-powered answers")
-        st.markdown("- 🌐 Multi-language support")
+        st.markdown("### Features")
+        st.markdown("- PDF and TXT support")
+        st.markdown("- Semantic search")
+        st.markdown("- AI-powered answers")
+        st.markdown("- Multi-language support")
         
         st.markdown("---")
-        st.markdown("### 📚 How it works")
+        st.markdown("### How it works")
         st.markdown("1. Upload document")
         st.markdown("2. Ask questions")
         st.markdown("3. Get AI-generated answers")
         
-        if st.button("🔄 Reset Session"):
+        if st.button("Reset Session", key="reset_button"):
             st.session_state.clear()
             st.rerun()
 
@@ -246,13 +246,12 @@ def main():
     
     with col2:
         # Mobile-friendly sidebar content
-        if st.button("ℹ️ Info", help="Click for information"):
+        if st.button("Info", key="info_button", help="Click for information"):
             st.sidebar.empty()
             render_sidebar()
     
-    # Always show sidebar on desktop, conditional on mobile
-    if st.session_state.get('show_sidebar', True):
-        render_sidebar()
+    # Render sidebar only once
+    render_sidebar()
 
 if __name__ == "__main__":
     main()

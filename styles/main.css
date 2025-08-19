@@ -19,24 +19,22 @@
 
 /* Main Header */
 .main-header {
-    color: #1f77b4;
+    color: #2c3e50;
     font-size: 2.5rem;
-    font-weight: bold;
+    font-weight: 600;
     text-align: center;
     margin-bottom: 1rem;
-    background: linear-gradient(135deg, #1f77b4, #ff7f0e);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Sub Header */
 .sub-header {
-    color: #666;
+    color: #7f8c8d;
     font-size: 1.2rem;
     text-align: center;
     margin-bottom: 2rem;
-    font-weight: 300;
+    font-weight: 400;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* ============================================================================
@@ -45,28 +43,32 @@
 
 /* Primary Button */
 .stButton > button {
-    background: linear-gradient(135deg, #1f77b4, #ff7f0e);
+    background: #3498db;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 12px 24px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(31, 119, 180, 0.3);
+    transition: all 0.2s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(31, 119, 180, 0.4);
+    background: #2980b9;
+    transform: translateY(-1px);
 }
 
 /* Secondary Button */
 .stButton > button[data-baseweb="button"] {
-    background: #f8f9fa;
-    color: #495057;
-    border: 2px solid #dee2e6;
+    background: #ecf0f1;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+}
+
+.stButton > button[data-baseweb="button"]:hover {
+    background: #d5dbdb;
 }
 
 /* ============================================================================
@@ -75,31 +77,33 @@
 
 /* Text Input */
 .stTextInput > div > div > input {
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
     padding: 12px 16px;
     font-size: 16px;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.2s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .stTextInput > div > div > input:focus {
-    border-color: #1f77b4;
-    box-shadow: 0 0 0 3px rgba(31, 119, 180, 0.1);
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
 }
 
 /* File Uploader */
 .stFileUploader > div {
-    border: 2px dashed #dee2e6;
-    border-radius: 12px;
+    border: 2px dashed #bdc3c7;
+    border-radius: 8px;
     padding: 40px 20px;
     text-align: center;
     background: #f8f9fa;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .stFileUploader > div:hover {
-    border-color: #1f77b4;
-    background: #f0f8ff;
+    border-color: #3498db;
+    background: #ecf0f1;
 }
 
 /* ============================================================================
@@ -108,23 +112,25 @@
 
 /* Answer Box */
 .answer-container {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-radius: 12px;
+    background: #ffffff;
+    border-radius: 8px;
     padding: 24px;
     margin: 20px 0;
-    border-left: 4px solid #1f77b4;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #3498db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ecf0f1;
 }
 
 /* Context Expander */
 .streamlit-expanderHeader {
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 16px;
     margin: 8px 0;
-    border: 1px solid #dee2e6;
-    font-weight: 600;
-    color: #495057;
+    border: 1px solid #ecf0f1;
+    font-weight: 500;
+    color: #2c3e50;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* ============================================================================
@@ -133,11 +139,11 @@
 
 /* Success Message */
 .element-container .stAlert[data-testid="stAlert"] {
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 16px;
     margin: 16px 0;
     border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Info Message */
@@ -167,8 +173,8 @@
 
 /* Spinner */
 .stSpinner > div {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #1f77b4;
+    border: 3px solid #ecf0f1;
+    border-top: 3px solid #3498db;
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -187,18 +193,20 @@
 
 /* Sidebar Container */
 .sidebar .sidebar-content {
-    background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+    background: #f8f9fa;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 8px;
     margin: 10px;
+    border: 1px solid #ecf0f1;
 }
 
 /* Sidebar Headers */
 .sidebar h3 {
-    color: #1f77b4;
+    color: #2c3e50;
     margin-bottom: 16px;
     font-size: 18px;
     font-weight: 600;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Sidebar Lists */
@@ -209,8 +217,9 @@
 
 .sidebar li {
     padding: 8px 0;
-    border-bottom: 1px solid #dee2e6;
-    color: #495057;
+    border-bottom: 1px solid #ecf0f1;
+    color: #2c3e50;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* ============================================================================
@@ -267,16 +276,6 @@
         margin: 5px;
         padding: 15px;
     }
-    
-    /* Hide sidebar by default on mobile */
-    .sidebar .sidebar-content {
-        display: none;
-    }
-    
-    /* Show sidebar when active */
-    .sidebar .sidebar-content.active {
-        display: block;
-    }
 }
 
 /* Tablet adjustments */
@@ -297,8 +296,7 @@
     }
     
     .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(31, 119, 180, 0.5);
+        transform: translateY(-2px);
     }
 }
 
@@ -329,15 +327,19 @@
 .p-4 { padding: 2rem; }
 
 /* ============================================================================
-   Dark Mode Support (Future)
+   Typography
    ============================================================================ */
 
-@media (prefers-color-scheme: dark) {
-    /* Dark mode styles can be added here */
-    body {
-        background-color: #1a1a1a;
-        color: #ffffff;
-    }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2c3e50;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2c3e50;
+    font-weight: 600;
 }
 
 /* ============================================================================
@@ -346,7 +348,7 @@
 
 /* Focus indicators */
 *:focus {
-    outline: 2px solid #1f77b4;
+    outline: 2px solid #3498db;
     outline-offset: 2px;
 }
 
@@ -354,7 +356,6 @@
 @media (prefers-contrast: high) {
     .main-header {
         color: #000000;
-        -webkit-text-fill-color: #000000;
     }
     
     .stButton > button {
@@ -375,7 +376,6 @@
     
     .main-header {
         color: #000000;
-        -webkit-text-fill-color: #000000;
     }
     
     .answer-container {
