@@ -5,13 +5,16 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+try:
+    load_dotenv()
+except:
+    pass
 
 class Config:
     """Configuration class for the RAG system"""
     
     # Gemini AI Configuration
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyAtbzwNPFSSVJib2gDF6EcUuVsXqD30eRo')
     
     # Document Processing Settings
     CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', 1000))
