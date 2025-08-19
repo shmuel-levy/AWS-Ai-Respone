@@ -90,6 +90,22 @@ def main():
         layout="wide"
     )
     
+    # Add CSS for RTL support
+    st.markdown("""
+    <style>
+    .rtl-text {
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: bidi-override;
+    }
+    .hebrew-text {
+        direction: rtl;
+        text-align: right;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.title("📚 Document Q&A System")
     st.markdown("Ask questions about your documents using AI-powered search")
     
@@ -149,9 +165,13 @@ def main():
                 st.subheader("🤖 Answer")
                 st.write(answer)
                 
-                # Display context (expandable)
+                # Display context (expandable) with RTL support for Hebrew
                 with st.expander("📖 View Source Context"):
-                    st.text(context)
+                    # Check if context contains Hebrew characters
+                    if any('\u0590' <= char <= '\u05FF' for char in context):
+                        st.markdown(f'<div class="hebrew-text">{context}</div>', unsafe_allow_html=True)
+                    else:
+                        st.text(context)
             else:
                 st.warning("Please enter a question")
     else:

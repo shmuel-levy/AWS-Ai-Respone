@@ -56,8 +56,16 @@ Question: {query}
 Instructions:
 1. Answer ONLY based on the provided document context
 2. If the information is not in the context, respond with: "I apologize, I don't know how to answer this question."
-3. Be concise and accurate
-4. Highlight important information from the document
+3. Be comprehensive and detailed in your response
+4. When asked about practical examples or implementation details, provide specific information including:
+   - Exact commands, code snippets, or configuration examples
+   - Specific timeframes, durations, or deadlines mentioned
+   - Names of services, tools, or technologies
+   - Step-by-step processes or procedures
+   - Specific metrics, values, or parameters
+5. Highlight important information from the document
+6. If the document contains Hebrew text, preserve the original Hebrew terms and provide English translations where helpful
+7. Organize your response in a clear, structured format
 
 Answer:
 """
