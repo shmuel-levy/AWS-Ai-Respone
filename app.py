@@ -210,8 +210,13 @@ def render_sidebar():
             st.success("Full Mode Active")
             st.info("All features available")
         else:
-            st.warning("Limited Mode")
-            st.info("Some features may be limited")
+            # Custom styling for limited mode
+            st.markdown("""
+                <div class="limited-mode-box">
+                    <h4>Limited Mode</h4>
+                    <p>Document processing is currently unavailable. The system will work in read-only mode.</p>
+                </div>
+            """, unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown("### Features")
@@ -226,9 +231,11 @@ def render_sidebar():
         st.markdown("2. Ask questions")
         st.markdown("3. Get AI-generated answers")
         
-        if st.button("Reset Session", key="reset_button"):
-            st.session_state.clear()
-            st.rerun()
+        # Only show reset button if not in limited mode
+        if CHROMA_AVAILABLE:
+            if st.button("Reset Session", key="reset_button"):
+                st.session_state.clear()
+                st.rerun()
 
 def main():
     """Main application function."""
@@ -250,7 +257,7 @@ def main():
             st.sidebar.empty()
             render_sidebar()
     
-    # Render sidebar only once
+    # Render sidebar only once - this was causing the duplicate key error
     render_sidebar()
 
 if __name__ == "__main__":

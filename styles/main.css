@@ -168,6 +168,35 @@
 }
 
 /* ============================================================================
+   Limited Mode Box Styling
+   ============================================================================ */
+
+.limited-mode-box {
+    background: #fff8e1;
+    border: 2px solid #ffb74d;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 0 2px 8px rgba(255, 183, 77, 0.2);
+}
+
+.limited-mode-box h4 {
+    color: #e65100;
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.limited-mode-box p {
+    color: #bf360c;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ============================================================================
    Loading State Styles
    ============================================================================ */
 
