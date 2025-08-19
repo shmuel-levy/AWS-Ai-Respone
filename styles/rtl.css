@@ -1,0 +1,328 @@
+/* ============================================================================
+   RTL (Right-to-Left) Language Support
+   ============================================================================ */
+
+/* ============================================================================
+   Hebrew and Arabic Text Support
+   ============================================================================ */
+
+/* Base RTL Text */
+.rtl-text {
+    direction: rtl;
+    text-align: right;
+    unicode-bidi: bidi-override;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Hebrew Text Specific */
+.hebrew-text {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    unicode-bidi: embed;
+    line-height: 1.6;
+}
+
+/* Hebrew Answer Styling */
+.hebrew-answer {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    unicode-bidi: embed;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+/* Mixed Text Support (Hebrew + English) */
+.mixed-text {
+    unicode-bidi: embed;
+    text-align: left;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ============================================================================
+   RTL Layout Adjustments
+   ============================================================================ */
+
+/* RTL Container */
+.rtl-container {
+    direction: rtl;
+    text-align: right;
+}
+
+/* RTL Input Fields */
+.rtl-input {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.rtl-input:focus {
+    border-color: #1f77b4;
+    box-shadow: 0 0 0 3px rgba(31, 119, 180, 0.1);
+    outline: none;
+}
+
+/* RTL Buttons */
+.rtl-button {
+    direction: rtl;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ============================================================================
+   RTL Typography
+   ============================================================================ */
+
+/* Hebrew Headers */
+.hebrew-header {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: bold;
+    color: #1f77b4;
+}
+
+/* Hebrew Paragraphs */
+.hebrew-paragraph {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+/* Hebrew Lists */
+.hebrew-list {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-right: 20px;
+    padding-left: 0;
+}
+
+.hebrew-list li {
+    margin-bottom: 0.5rem;
+}
+
+/* ============================================================================
+   RTL Form Elements
+   ============================================================================ */
+
+/* RTL Form Container */
+.rtl-form {
+    direction: rtl;
+    text-align: right;
+}
+
+/* RTL Labels */
+.rtl-label {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* RTL Textarea */
+.rtl-textarea {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 16px;
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ============================================================================
+   RTL Navigation
+   ============================================================================ */
+
+/* RTL Navigation Menu */
+.rtl-nav {
+    direction: rtl;
+    text-align: right;
+}
+
+.rtl-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.rtl-nav li {
+    margin-bottom: 0.5rem;
+}
+
+.rtl-nav a {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-decoration: none;
+    color: #1f77b4;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.rtl-nav a:hover {
+    background-color: rgba(31, 119, 180, 0.1);
+}
+
+/* ============================================================================
+   RTL Tables
+   ============================================================================ */
+
+/* RTL Table */
+.rtl-table {
+    direction: rtl;
+    text-align: right;
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.rtl-table th,
+.rtl-table td {
+    direction: rtl;
+    text-align: right;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.rtl-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* ============================================================================
+   RTL Cards and Containers
+   ============================================================================ */
+
+/* RTL Card */
+.rtl-card {
+    direction: rtl;
+    text-align: right;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    border-left: 4px solid #1f77b4;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* RTL Alert */
+.rtl-alert {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.rtl-alert.success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.rtl-alert.warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+}
+
+.rtl-alert.error {
+    background: linear-gradient(135deg, #dc3545, #e83e8c);
+    color: white;
+}
+
+.rtl-alert.info {
+    background: linear-gradient(135deg, #17a2b8, #6f42c1);
+    color: white;
+}
+
+/* ============================================================================
+   RTL Responsive Design
+   ============================================================================ */
+
+/* Mobile RTL Adjustments */
+@media (max-width: 768px) {
+    .rtl-text,
+    .hebrew-text,
+    .hebrew-answer {
+        font-size: 14px;
+    }
+    
+    .rtl-card {
+        padding: 16px;
+        margin: 10px 0;
+    }
+    
+    .rtl-input,
+    .rtl-textarea {
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+}
+
+/* Tablet RTL Adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .rtl-card {
+        padding: 20px;
+    }
+}
+
+/* ============================================================================
+   RTL Utility Classes
+   ============================================================================ */
+
+/* RTL Text Alignment */
+.rtl-text-left { text-align: left; }
+.rtl-text-right { text-align: right; }
+.rtl-text-center { text-align: center; }
+
+/* RTL Direction */
+.rtl-direction { direction: rtl; }
+.ltr-direction { direction: ltr; }
+
+/* RTL Float */
+.rtl-float-right { float: right; }
+.rtl-float-left { float: left; }
+
+/* RTL Margin */
+.rtl-mr-1 { margin-right: 0.25rem; }
+.rtl-mr-2 { margin-right: 0.5rem; }
+.rtl-mr-3 { margin-right: 1rem; }
+.rtl-mr-4 { margin-right: 1.5rem; }
+.rtl-mr-5 { margin-right: 3rem; }
+
+.rtl-ml-1 { margin-left: 0.25rem; }
+.rtl-ml-2 { margin-left: 0.5rem; }
+.rtl-ml-3 { margin-left: 1rem; }
+.rtl-ml-4 { margin-left: 1.5rem; }
+.rtl-ml-5 { margin-left: 3rem; }
+
+/* RTL Padding */
+.rtl-pr-1 { padding-right: 0.25rem; }
+.rtl-pr-2 { padding-right: 0.5rem; }
+.rtl-pr-3 { padding-right: 1rem; }
+.rtl-pr-4 { padding-right: 1.5rem; }
+.rtl-pr-5 { padding-right: 3rem; }
+
+.rtl-pl-1 { padding-left: 0.25rem; }
+.rtl-pl-2 { padding-left: 0.5rem; }
+.rtl-pl-3 { padding-left: 1rem; }
+.rtl-pl-4 { padding-left: 1.5rem; }
+.rtl-pl-5 { padding-left: 3rem; }
