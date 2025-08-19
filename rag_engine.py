@@ -8,13 +8,26 @@ from typing import List, Dict, Any, Tuple, Optional
 from sentence_transformers import SentenceTransformer
 from config import Config
 
-# Safe import for ChromaDB with fallback
-try:
-    import chromadb
-    CHROMADB_AVAILABLE = True
-except ImportError:
-    CHROMADB_AVAILABLE = False
-    print("Warning: ChromaDB not available, using in-memory fallback")
+# ChromaDB import will be handled conditionally
+CHROMADB_AVAILABLE = False
+chromadb = None
+
+# Try to import ChromaDB only if it's available and safe
+def _safe_import_chromadb():
+    """Safely import ChromaDB if available"""
+    global chromadb, CHROMADB_AVAILABLE
+    try:
+        import chromadb
+        CHROMADB_AVAILABLE = True
+        return True
+    except (ImportError, RuntimeError):
+        CHROMADB_AVAILABLE = False
+        chromadb = None
+        print("Warning: ChromaDB not available, using in-memory fallback")
+        return False
+
+# Initialize ChromaDB availability
+_safe_import_chromadb()
 
 # Fallback for when ChromaDB is not available (e.g., Streamlit Cloud)
 class InMemoryVectorStore:
@@ -78,7 +91,7 @@ class RAGEngine:
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         
         # Initialize storage based on availability
-        if CHROMADB_AVAILABLE and self._can_use_chromadb():
+        if CHROMADB_AVAILABLE and chromadb and self._can_use_chromadb():
             try:
                 self.client = chromadb.PersistentClient(path=persist_directory)
                 self.collection = None
@@ -97,6 +110,9 @@ class RAGEngine:
     
     def _can_use_chromadb(self) -> bool:
         """Check if ChromaDB can be used safely"""
+        if not CHROMADB_AVAILABLE or not chromadb:
+            return False
+            
         try:
             # Check if we can write to the directory
             test_file = os.path.join(self.persist_directory, "test_write.tmp")
@@ -332,33 +348,51 @@ class RAGEngine:
         Returns:
             List of chunks containing the keywords
         """
-        if not self.collection:
-            return []
+        if not self.collection or self.use_fallback:
+            # Fallback: search in memory
+            keyword_matches = []
+            for chunk in self.document_chunks:
+                chunk_content = chunk.get('content', '')
+                if all(keyword.lower() in chunk_content.lower() for keyword in keywords):
+                    chunk_data = {
+                        'content': chunk_content,
+                        'metadata': chunk,
+                        'id': f"chunk_{chunk.get('id', 'unknown')}",
+                        'keyword_matches': [kw for kw in keywords if kw.lower() in chunk_content.lower()]
+                    }
+                    keyword_matches.append(chunk_data)
+            return keyword_matches
         
-        # Create a query from keywords
-        query = " ".join(keywords)
-        
-        # Search for chunks containing these keywords
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=len(self.document_chunks)
-        )
-        
-        keyword_matches = []
-        for i in range(len(results['documents'][0])):
-            chunk_content = results['documents'][0][i]
+        # Use ChromaDB if available
+        try:
+            # Create a query from keywords
+            query = " ".join(keywords)
             
-            # Check if all keywords are present
-            if all(keyword.lower() in chunk_content.lower() for keyword in keywords):
-                chunk_data = {
-                    'content': chunk_content,
-                    'metadata': results['metadatas'][0][i],
-                    'id': results['ids'][0][i],
-                    'keyword_matches': [kw for kw in keywords if kw.lower() in chunk_content.lower()]
-                }
-                keyword_matches.append(chunk_data)
-        
-        return keyword_matches
+            # Search for chunks containing these keywords
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=len(self.document_chunks)
+            )
+            
+            keyword_matches = []
+            for i in range(len(results['documents'][0])):
+                chunk_content = results['documents'][0][i]
+                
+                # Check if all keywords are present
+                if all(keyword.lower() in chunk_content.lower() for keyword in keywords):
+                    chunk_data = {
+                        'content': chunk_content,
+                        'metadata': results['metadatas'][0][i],
+                        'id': results['ids'][0][i],
+                        'keyword_matches': [kw for kw in keywords if kw.lower() in chunk_content.lower()]
+                    }
+                    keyword_matches.append(chunk_data)
+            
+            return keyword_matches
+        except Exception as e:
+            print(f"Warning: ChromaDB keyword search failed: {e}")
+            # Fallback to memory search
+            return self.find_keyword_matches(keywords)
     
     def _extract_search_keywords(self, text: str) -> List[str]:
         """

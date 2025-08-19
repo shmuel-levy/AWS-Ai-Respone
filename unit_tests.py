@@ -234,6 +234,12 @@ class TestRAGEngine(unittest.TestCase):
     @patch('rag_engine.chromadb.PersistentClient')
     def test_database_initialization(self, mock_client):
         """Test database initialization with mocked ChromaDB."""
+        # Skip this test if ChromaDB is not available
+        try:
+            import chromadb
+        except (ImportError, RuntimeError):
+            self.skipTest("ChromaDB not available, skipping ChromaDB tests")
+            
         # Mock ChromaDB client
         mock_client_instance = Mock()
         mock_collection = Mock()
