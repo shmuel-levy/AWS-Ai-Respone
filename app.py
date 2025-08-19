@@ -102,6 +102,18 @@ def main():
         direction: rtl;
         text-align: right;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        unicode-bidi: embed;
+    }
+    .hebrew-answer {
+        direction: rtl;
+        text-align: right;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        unicode-bidi: embed;
+        line-height: 1.6;
+    }
+    .mixed-text {
+        unicode-bidi: embed;
+        text-align: left;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -163,13 +175,18 @@ def main():
                 
                 # Display answer
                 st.subheader("🤖 Answer")
-                st.write(answer)
+                
+                # Check if answer contains Hebrew characters and display appropriately
+                if any('\u0590' <= char <= '\u05FF' for char in answer):
+                    st.markdown(f'<div class="mixed-text">{answer}</div>', unsafe_allow_html=True)
+                else:
+                    st.write(answer)
                 
                 # Display context (expandable) with RTL support for Hebrew
                 with st.expander("📖 View Source Context"):
                     # Check if context contains Hebrew characters
                     if any('\u0590' <= char <= '\u05FF' for char in context):
-                        st.markdown(f'<div class="hebrew-text">{context}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="mixed-text">{context}</div>', unsafe_allow_html=True)
                     else:
                         st.text(context)
             else:
