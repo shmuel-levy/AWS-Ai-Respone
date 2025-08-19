@@ -6,34 +6,11 @@
    Base Styles
    ============================================================================ */
 
-/* RTL Text Support */
-.rtl-text {
-    direction: rtl;
-    text-align: right;
-    unicode-bidi: bidi-override;
-}
-
-/* Hebrew Text Support */
-.hebrew-text {
-    direction: rtl;
-    text-align: right;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    unicode-bidi: embed;
-}
-
-/* Hebrew Answer Styling */
-.hebrew-answer {
-    direction: rtl;
-    text-align: right;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    unicode-bidi: embed;
-    line-height: 1.6;
-}
-
-/* Mixed Text Support (Hebrew + English) */
-.mixed-text {
-    unicode-bidi: embed;
-    text-align: left;
+/* Global Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 /* ============================================================================
@@ -63,32 +40,41 @@
 }
 
 /* ============================================================================
-   Component Styles
+   Button Styles
    ============================================================================ */
 
-/* Sidebar Styling */
-.sidebar .sidebar-content {
-    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-    border-right: 2px solid #dee2e6;
-}
-
-/* Upload Area */
-.upload-area {
-    border: 2px dashed #1f77b4;
-    border-radius: 10px;
-    padding: 20px;
-    text-align: center;
-    background: rgba(31, 119, 180, 0.05);
+/* Primary Button */
+.stButton > button {
+    background: linear-gradient(135deg, #1f77b4, #ff7f0e);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(31, 119, 180, 0.3);
 }
 
-.upload-area:hover {
-    border-color: #ff7f0e;
-    background: rgba(255, 127, 14, 0.05);
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(31, 119, 180, 0.4);
 }
 
-/* Query Input */
-.query-input {
+/* Secondary Button */
+.stButton > button[data-baseweb="button"] {
+    background: #f8f9fa;
+    color: #495057;
+    border: 2px solid #dee2e6;
+}
+
+/* ============================================================================
+   Input Field Styles
+   ============================================================================ */
+
+/* Text Input */
+.stTextInput > div > div > input {
     border: 2px solid #e9ecef;
     border-radius: 8px;
     padding: 12px 16px;
@@ -96,128 +82,98 @@
     transition: border-color 0.3s ease;
 }
 
-.query-input:focus {
+.stTextInput > div > div > input:focus {
     border-color: #1f77b4;
     box-shadow: 0 0 0 3px rgba(31, 119, 180, 0.1);
-    outline: none;
 }
 
-/* Button Styling */
-.primary-button {
-    background: linear-gradient(135deg, #1f77b4, #ff7f0e);
-    border: none;
-    border-radius: 8px;
-    padding: 12px 24px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
+/* File Uploader */
+.stFileUploader > div {
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    background: #f8f9fa;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.primary-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+.stFileUploader > div:hover {
+    border-color: #1f77b4;
+    background: #f0f8ff;
 }
 
 /* ============================================================================
-   Answer Display Styles
+   Answer Container Styles
    ============================================================================ */
 
-/* Answer Container */
+/* Answer Box */
 .answer-container {
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
     border-radius: 12px;
     padding: 24px;
     margin: 20px 0;
     border-left: 4px solid #1f77b4;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-/* Answer Text */
-.answer-text {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
-    margin-bottom: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Context Expander */
-.context-expander {
+.streamlit-expanderHeader {
     background: #f8f9fa;
     border-radius: 8px;
-    border: 1px solid #dee2e6;
-    margin-top: 16px;
-}
-
-.context-content {
     padding: 16px;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    background: #ffffff;
-    border-radius: 4px;
-    max-height: 300px;
-    overflow-y: auto;
+    margin: 8px 0;
+    border: 1px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
 }
 
 /* ============================================================================
-   Status Messages
+   Status Message Styles
    ============================================================================ */
 
 /* Success Message */
-.success-message {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    padding: 12px 16px;
+.element-container .stAlert[data-testid="stAlert"] {
     border-radius: 8px;
-    margin: 10px 0;
-    font-weight: 500;
-}
-
-/* Warning Message */
-.warning-message {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin: 10px 0;
-    font-weight: 500;
-}
-
-/* Error Message */
-.error-message {
-    background: linear-gradient(135deg, #dc3545, #e83e8c);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin: 10px 0;
-    font-weight: 500;
+    padding: 16px;
+    margin: 16px 0;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Info Message */
-.info-message {
-    background: linear-gradient(135deg, #17a2b8, #6f42c1);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin: 10px 0;
-    font-weight: 500;
+.stAlert[data-testid="stAlert"] {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+
+/* Warning Message */
+.stAlert[data-testid="stAlert"] {
+    background: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+/* Error Message */
+.stAlert[data-testid="stAlert"] {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
 }
 
 /* ============================================================================
-   Loading States
+   Loading State Styles
    ============================================================================ */
 
 /* Spinner */
-.loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
+.stSpinner > div {
     border: 3px solid #f3f3f3;
     border-top: 3px solid #1f77b4;
     border-radius: 50%;
+    width: 40px;
+    height: 40px;
     animation: spin 1s linear infinite;
+    margin: 20px auto;
 }
 
 @keyframes spin {
@@ -225,46 +181,124 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Loading Container */
-.loading-container {
-    text-align: center;
-    padding: 40px;
-    color: #666;
+/* ============================================================================
+   Sidebar Styles
+   ============================================================================ */
+
+/* Sidebar Container */
+.sidebar .sidebar-content {
+    background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 10px;
+}
+
+/* Sidebar Headers */
+.sidebar h3 {
+    color: #1f77b4;
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Sidebar Lists */
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 8px 0;
+    border-bottom: 1px solid #dee2e6;
+    color: #495057;
 }
 
 /* ============================================================================
-   Responsive Design
+   Mobile Responsive Design
    ============================================================================ */
 
-/* Mobile Styles */
+/* Mobile First Approach */
 @media (max-width: 768px) {
+    /* Header adjustments */
     .main-header {
         font-size: 2rem;
+        margin-bottom: 0.5rem;
     }
     
     .sub-header {
         font-size: 1rem;
+        margin-bottom: 1rem;
     }
     
-    .answer-container {
+    /* Column layout for mobile */
+    .row-widget.stHorizontal {
+        flex-direction: column;
+    }
+    
+    /* Button sizing */
+    .stButton > button {
+        width: 100%;
+        padding: 16px 24px;
+        font-size: 18px;
+        margin: 8px 0;
+    }
+    
+    /* Input field sizing */
+    .stTextInput > div > div > input {
+        width: 100%;
         padding: 16px;
+        font-size: 18px;
+    }
+    
+    /* File uploader */
+    .stFileUploader > div {
+        padding: 30px 15px;
         margin: 10px 0;
     }
     
-    .query-input {
-        font-size: 14px;
-        padding: 10px 12px;
+    /* Answer container */
+    .answer-container {
+        padding: 16px;
+        margin: 15px 0;
+    }
+    
+    /* Sidebar mobile */
+    .sidebar .sidebar-content {
+        margin: 5px;
+        padding: 15px;
+    }
+    
+    /* Hide sidebar by default on mobile */
+    .sidebar .sidebar-content {
+        display: none;
+    }
+    
+    /* Show sidebar when active */
+    .sidebar .sidebar-content.active {
+        display: block;
     }
 }
 
-/* Tablet Styles */
+/* Tablet adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
     .main-header {
         font-size: 2.2rem;
     }
     
-    .answer-container {
-        padding: 20px;
+    .stButton > button {
+        padding: 14px 20px;
+    }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1025px) {
+    .main-header {
+        font-size: 2.8rem;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(31, 119, 180, 0.5);
     }
 }
 
@@ -272,55 +306,80 @@
    Utility Classes
    ============================================================================ */
 
-/* Text Utilities */
+/* Text alignment */
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }
 
-/* Margin Utilities */
-.mt-1 { margin-top: 0.25rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-3 { margin-top: 1rem; }
-.mt-4 { margin-top: 1.5rem; }
-.mt-5 { margin-top: 3rem; }
+/* Margins */
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
 
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-3 { margin-bottom: 1rem; }
-.mb-4 { margin-bottom: 1.5rem; }
-.mb-5 { margin-bottom: 3rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
 
-/* Padding Utilities */
-.p-1 { padding: 0.25rem; }
-.p-2 { padding: 0.5rem; }
-.p-3 { padding: 1rem; }
-.p-4 { padding: 1.5rem; }
-.p-5 { padding: 3rem; }
-
-/* Display Utilities */
-.d-none { display: none; }
-.d-block { display: block; }
-.d-inline { display: inline; }
-.d-inline-block { display: inline-block; }
+/* Padding */
+.p-1 { padding: 0.5rem; }
+.p-2 { padding: 1rem; }
+.p-3 { padding: 1.5rem; }
+.p-4 { padding: 2rem; }
 
 /* ============================================================================
-   Dark Mode Support (Future Enhancement)
+   Dark Mode Support (Future)
    ============================================================================ */
 
 @media (prefers-color-scheme: dark) {
+    /* Dark mode styles can be added here */
+    body {
+        background-color: #1a1a1a;
+        color: #ffffff;
+    }
+}
+
+/* ============================================================================
+   Accessibility Improvements
+   ============================================================================ */
+
+/* Focus indicators */
+*:focus {
+    outline: 2px solid #1f77b4;
+    outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .main-header {
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
+    
+    .stButton > button {
+        border: 2px solid #000000;
+    }
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+    .sidebar,
+    .stButton,
+    .stFileUploader {
+        display: none;
+    }
+    
+    .main-header {
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
+    
     .answer-container {
-        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-        color: #e2e8f0;
-    }
-    
-    .query-input {
-        background: #2d3748;
-        color: #e2e8f0;
-        border-color: #4a5568;
-    }
-    
-    .context-content {
-        background: #2d3748;
-        color: #e2e8f0;
+        border: 1px solid #000000;
+        box-shadow: none;
     }
 }

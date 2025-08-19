@@ -14,12 +14,8 @@ try:
     from config import Config
     CHROMA_AVAILABLE = True
 except ImportError as e:
-    st.error(f"⚠️ Import Error: {e}")
-    st.info("Running in fallback mode - some features may be limited")
     CHROMA_AVAILABLE = False
 except Exception as e:
-    st.error(f"⚠️ Unexpected Error: {e}")
-    st.info("Running in fallback mode - some features may be limited")
     CHROMA_AVAILABLE = False
 
 def initialize_application_state():
@@ -32,8 +28,6 @@ def initialize_application_state():
         st.session_state.rag_engine = None
     if 'gemini_client' not in st.session_state:
         st.session_state.gemini_client = None
-    if 'fallback_mode' not in st.session_state:
-        st.session_state.fallback_mode = not CHROMA_AVAILABLE
 
 def process_uploaded_document(file_path: str):
     """
@@ -46,7 +40,7 @@ def process_uploaded_document(file_path: str):
         List of document chunks with metadata, or None if processing fails
     """
     if not CHROMA_AVAILABLE:
-        st.error("❌ Document processing is not available in fallback mode")
+        st.error("❌ Document processing is not available. Please check your installation.")
         return None
         
     try:
@@ -80,15 +74,10 @@ def load_css_files():
         with open('styles/main.css', 'r', encoding='utf-8') as f:
             main_css = f.read()
         
-        # Load RTL CSS
-        with open('styles/rtl.css', 'r', encoding='utf-8') as f:
-            rtl_css = f.read()
-        
         # Apply CSS
         st.markdown(f"""
             <style>
             {main_css}
-            {rtl_css}
             </style>
         """, unsafe_allow_html=True)
         
@@ -99,20 +88,15 @@ def load_css_files():
 
 def render_header():
     """Render the main header section."""
-    st.markdown('<h1 class="main-header">📚 מערכת שאלות ותשובות על מסמכים</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Document Q&A System powered by Google Gemini AI</p>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">📚 Document Q&A System</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Ask questions about your documents using AI-powered search</p>', unsafe_allow_html=True)
 
 def render_upload_section():
     """Render the document upload section."""
-    st.markdown("### 📄 העלאת מסמך / Upload Document")
-    
-    if st.session_state.fallback_mode:
-        st.warning("⚠️ Running in fallback mode - document processing is limited")
-        st.info("This is a demonstration mode. Full functionality requires local deployment.")
-        return
+    st.markdown("### 📄 Upload Document")
     
     uploaded_file = st.file_uploader(
-        "בחר קובץ PDF או TXT / Choose PDF or TXT file",
+        "Choose a PDF or TXT file",
         type=['pdf', 'txt'],
         help="Upload a document to start asking questions"
     )
@@ -124,12 +108,12 @@ def render_upload_section():
             f.write(uploaded_file.getbuffer())
         
         # Process document
-        with st.spinner("מעבד מסמך... / Processing document..."):
+        with st.spinner("Processing document..."):
             chunks = process_uploaded_document(temp_file_path)
         
         if chunks:
-            st.success(f"✅ המסמך עובד בהצלחה! / Document processed successfully!")
-            st.info(f"נוצרו {len(chunks)} חלקים / Created {len(chunks)} chunks")
+            st.success(f"✅ Document processed successfully!")
+            st.info(f"Created {len(chunks)} semantic chunks")
             
             # Clean up temp file
             try:
@@ -137,7 +121,7 @@ def render_upload_section():
             except:
                 pass
         else:
-            st.error("❌ שגיאה בעיבוד המסמך / Error processing document")
+            st.error("❌ Error processing document")
             
             # Clean up temp file
             try:
@@ -147,36 +131,28 @@ def render_upload_section():
 
 def render_question_section():
     """Render the question input section."""
-    st.markdown("### ❓ שאל שאלה / Ask a Question")
+    st.markdown("### ❓ Ask a Question")
     
-    if not st.session_state.document_loaded and not st.session_state.fallback_mode:
-        st.info("📝 אנא העלה מסמך תחילה / Please upload a document first")
+    if not st.session_state.document_loaded:
+        st.info("📝 Please upload a document first")
         return
     
-    if st.session_state.fallback_mode:
-        st.info("🎭 Demo Mode: Try asking a question about AWS cloud architecture")
-    
     question = st.text_input(
-        "הקלד את השאלה שלך / Type your question:",
-        placeholder="למשל: מה זה AWS Lambda? / Example: What is AWS Lambda?",
+        "Type your question:",
+        placeholder="Example: What is the main topic of this document?",
         help="Ask any question about the uploaded document"
     )
     
-    if st.button("🔍 חפש תשובה / Search Answer", type="primary"):
+    if st.button("🔍 Search Answer", type="primary"):
         if question.strip():
             process_question(question)
         else:
-            st.warning("⚠️ אנא הקלד שאלה / Please type a question")
+            st.warning("⚠️ Please type a question")
 
 def process_question(question: str):
     """Process user question and generate answer."""
-    if st.session_state.fallback_mode:
-        # Demo mode - provide sample answers
-        provide_demo_answer(question)
-        return
-    
     if not st.session_state.document_loaded:
-        st.error("❌ אין מסמך זמין / No document available")
+        st.error("❌ No document available")
         return
     
     try:
@@ -196,98 +172,59 @@ def process_question(question: str):
         relevant_chunks = st.session_state.rag_engine.find_relevant_chunks(question)
         
         if not relevant_chunks:
-            st.warning("⚠️ לא נמצאו חלקים רלוונטיים / No relevant chunks found")
+            st.warning("⚠️ No relevant chunks found")
             return
         
         # Build context
         context = "\n\n".join([chunk['content'] for chunk in relevant_chunks])
         
         # Generate answer
-        with st.spinner("מחפש תשובה... / Searching for answer..."):
+        with st.spinner("Searching for answer..."):
             answer = st.session_state.gemini_client.generate_answer_from_context(question, context)
         
         # Display results
         display_answer(question, answer, relevant_chunks)
         
     except Exception as e:
-        st.error(f"❌ שגיאה בעיבוד השאלה / Error processing question: {str(e)}")
-
-def provide_demo_answer(question: str):
-    """Provide demo answers in fallback mode."""
-    st.markdown("### 🎭 Demo Mode Answer")
-    
-    # Sample AWS-related answers
-    demo_answers = {
-        "aws lambda": "AWS Lambda is a serverless compute service that runs your code in response to events and automatically manages the underlying compute resources.",
-        "ec2": "Amazon EC2 (Elastic Compute Cloud) provides scalable computing capacity in the AWS cloud, allowing you to launch virtual servers.",
-        "s3": "Amazon S3 (Simple Storage Service) is an object storage service offering industry-leading scalability, data availability, security, and performance.",
-        "cloud": "Cloud computing is the on-demand delivery of IT resources over the internet with pay-as-you-go pricing.",
-        "serverless": "Serverless computing allows you to run code without provisioning or managing servers, paying only for the compute time you consume."
-    }
-    
-    # Find relevant demo answer
-    question_lower = question.lower()
-    relevant_answer = None
-    
-    for key, answer in demo_answers.items():
-        if key in question_lower:
-            relevant_answer = answer
-            break
-    
-    if relevant_answer:
-        st.success("✅ Found relevant information!")
-        st.markdown(f"**Answer:** {relevant_answer}")
-    else:
-        st.info("💡 This is a demo mode. Try asking about AWS services like Lambda, EC2, S3, or cloud computing.")
-    
-    st.markdown("---")
-    st.markdown("**Note:** This is a demonstration. For full functionality, deploy locally with all dependencies.")
+        st.error(f"❌ Error processing question: {str(e)}")
 
 def display_answer(question: str, answer: str, relevant_chunks: list):
     """Display the generated answer and relevant context."""
-    st.markdown("### 💡 תשובה / Answer")
-    
-    # Display answer with RTL support
-    if any('\u0590' <= char <= '\u05FF' for char in answer):
-        st.markdown(f'<div class="hebrew-answer">{answer}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(answer)
+    st.markdown("### 💡 Answer")
+    st.markdown(answer)
     
     # Display relevant context
-    st.markdown("### 📖 הקשר רלוונטי / Relevant Context")
+    st.markdown("### 📖 Relevant Context")
     
     for i, chunk in enumerate(relevant_chunks):
-        with st.expander(f"חלק {i+1} / Chunk {i+1} (מילים {chunk.get('word_count', 'N/A')} / words {chunk.get('word_count', 'N/A')})"):
+        with st.expander(f"Chunk {i+1} ({chunk.get('word_count', 'N/A')} words)"):
             chunk_content = chunk.get('content', '')
-            if any('\u0590' <= char <= '\u05FF' for char in chunk_content):
-                st.markdown(f'<div class="hebrew-text">{chunk_content}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(chunk_content)
+            st.markdown(chunk_content)
 
 def render_sidebar():
     """Render the sidebar with additional information."""
     with st.sidebar:
-        st.markdown("### ℹ️ מידע / Information")
+        st.markdown("### ℹ️ Information")
         
-        if st.session_state.fallback_mode:
-            st.warning("🎭 Demo Mode Active")
-            st.info("Limited functionality for demonstration purposes")
-        else:
+        if CHROMA_AVAILABLE:
             st.success("🚀 Full Mode Active")
             st.info("All features available")
+        else:
+            st.warning("⚠️ Limited Mode")
+            st.info("Some features may be limited")
         
         st.markdown("---")
-        st.markdown("### 🔧 תכונות / Features")
-        st.markdown("- 📄 תמיכה ב-PDF ו-TXT")
-        st.markdown("- 🔍 חיפוש סמנטי")
-        st.markdown("- 🤖 תשובות מבוססות AI")
-        st.markdown("- 🌐 תמיכה בעברית ואנגלית")
+        st.markdown("### 🔧 Features")
+        st.markdown("- 📄 PDF and TXT support")
+        st.markdown("- 🔍 Semantic search")
+        st.markdown("- 🤖 AI-powered answers")
+        st.markdown("- 🌐 Multi-language support")
         
         st.markdown("---")
-        st.markdown("### 📚 איך זה עובד / How it works")
-        st.markdown("1. העלה מסמך")
-        st.markdown("2. שאל שאלה")
-        st.markdown("3. קבל תשובה מבוססת על המסמך")
+        st.markdown("### 📚 How it works")
+        st.markdown("1. Upload document")
+        st.markdown("2. Ask questions")
+        st.markdown("3. Get AI-generated answers")
         
         if st.button("🔄 Reset Session"):
             st.session_state.clear()
@@ -300,15 +237,22 @@ def main():
     
     render_header()
     
-    # Check deployment status
-    if st.session_state.fallback_mode:
-        st.warning("⚠️ **Deployment Notice:** Running in fallback mode due to dependency issues.")
-        st.info("For full functionality, consider deploying locally or using a different hosting service.")
-        st.markdown("---")
+    # Create responsive columns for mobile
+    col1, col2 = st.columns([3, 1])
     
-    render_upload_section()
-    render_question_section()
-    render_sidebar()
+    with col1:
+        render_upload_section()
+        render_question_section()
+    
+    with col2:
+        # Mobile-friendly sidebar content
+        if st.button("ℹ️ Info", help="Click for information"):
+            st.sidebar.empty()
+            render_sidebar()
+    
+    # Always show sidebar on desktop, conditional on mobile
+    if st.session_state.get('show_sidebar', True):
+        render_sidebar()
 
 if __name__ == "__main__":
     main()
