@@ -4,17 +4,30 @@ Handles semantic search and retrieval of relevant document chunks
 """
 import os
 import chromadb
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from config import Config
 
 
 class RAGEngine:
-    """Handles retrieval-augmented generation for document Q&A"""
+    """
+    Handles retrieval-augmented generation for document Q&A.
     
-    def __init__(self, persist_directory: str = None):
-        """Initialize the RAG engine"""
+    This class is responsible for:
+    - Managing vector database (ChromaDB) for document chunks
+    - Performing semantic search to find relevant chunks
+    - Providing context for AI model queries
+    - Managing chunk metadata and embeddings
+    """
+    
+    def __init__(self, persist_directory: Optional[str] = None):
+        """
+        Initialize the RAG engine with vector database.
+        
+        Args:
+            persist_directory: Directory to persist ChromaDB data
+        """
         if persist_directory is None:
             persist_directory = Config.CHROMA_PERSIST_DIRECTORY
             
@@ -22,10 +35,15 @@ class RAGEngine:
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.client = chromadb.PersistentClient(path=persist_directory)
         self.collection = None
-        self.chunks = []
+        self.document_chunks = []
         
-    def setup_collection(self, collection_name: str = "document_chunks"):
-        """Setup ChromaDB collection for document chunks"""
+    def initialize_database(self, collection_name: str = "document_chunks") -> None:
+        """
+        Initialize ChromaDB collection for document chunks.
+        
+        Args:
+            collection_name: Name of the collection to create or connect to
+        """
         try:
             self.collection = self.client.get_collection(name=collection_name)
         except:
@@ -34,13 +52,18 @@ class RAGEngine:
                 metadata={"hnsw:space": "cosine"}
             )
     
-    def add_chunks(self, chunks: List[Dict[str, Any]]):
-        """Add document chunks to the vector database"""
+    def index_document_chunks(self, chunks: List[Dict[str, Any]]) -> None:
+        """
+        Index document chunks into the vector database.
+        
+        Args:
+            chunks: List of document chunks with metadata
+        """
         if not chunks:
             return
             
-        self.chunks = chunks
-        self.setup_collection()
+        self.document_chunks = chunks
+        self.initialize_database()
         
         documents = []
         metadatas = []
@@ -62,12 +85,12 @@ class RAGEngine:
             ids=ids
         )
     
-    def search_relevant_chunks(self, query: str, top_k: int = None) -> List[Dict[str, Any]]:
+    def find_relevant_chunks(self, query: str, top_k: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        Search for relevant document chunks based on query
+        Find relevant document chunks based on semantic similarity.
         
         Args:
-            query: User question
+            query: User question or search query
             top_k: Number of top results to return
             
         Returns:
@@ -90,116 +113,192 @@ class RAGEngine:
                 'content': results['documents'][0][i],
                 'metadata': results['metadatas'][0][i],
                 'id': results['ids'][0][i],
-                'distance': results['distances'][0][i] if 'distances' in results else 0.0
+                'similarity_score': results['distances'][0][i] if 'distances' in results else 0.0
             }
             relevant_chunks.append(chunk_data)
         
         return relevant_chunks
     
-    def get_context_for_query(self, query: str) -> str:
+    def build_query_context(self, query: str) -> str:
         """
-        Get relevant context for a query
+        Build context string from relevant chunks for AI model.
         
         Args:
             query: User question
             
         Returns:
-            Combined context from relevant chunks
+            Formatted context string with relevant chunks
         """
-        relevant_chunks = self.search_relevant_chunks(query)
+        relevant_chunks = self.find_relevant_chunks(query)
         
         if not relevant_chunks:
             return ""
         
         context_parts = []
-        for chunk in relevant_chunks:
-            context_parts.append(f"Section {chunk['metadata']['chunk_id']}: {chunk['content']}")
+        for i, chunk in enumerate(relevant_chunks):
+            context_parts.append(f"Section {i}: {chunk['content']}")
         
         return "\n\n".join(context_parts)
     
-    def get_chunk_by_id(self, chunk_id: int) -> Dict[str, Any]:
-        """Get specific chunk by ID"""
-        for chunk in self.chunks:
-            if chunk['id'] == chunk_id:
-                return chunk
+    def get_chunk_by_id(self, chunk_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve specific chunk by its ID.
+        
+        Args:
+            chunk_id: ID of the chunk to retrieve
+            
+        Returns:
+            Chunk data if found, None otherwise
+        """
+        if not self.collection:
+            return None
+        
+        try:
+            results = self.collection.get(ids=[chunk_id])
+            if results['documents']:
+                return {
+                    'content': results['documents'][0],
+                    'metadata': results['metadatas'][0] if results['metadatas'] else {},
+                    'id': chunk_id
+                }
+        except:
+            pass
+        
         return None
     
-    def update_chunks(self, new_chunks: List[Dict[str, Any]]):
-        """Update chunks in the database"""
-        if self.collection:
-            self.client.delete_collection(name=self.collection.name)
-        
-        self.add_chunks(new_chunks)
-    
-    def get_collection_stats(self) -> Dict[str, Any]:
-        """Get statistics about the collection"""
-        if not self.collection:
-            return {}
-        
-        count = self.collection.count()
-        return {
-            'total_chunks': count,
-            'collection_name': self.collection.name,
-            'persist_directory': self.persist_directory
-        }
-    
-    def clear_collection(self):
-        """Clear all data from the collection"""
-        if self.collection:
-            self.client.delete_collection(name=self.collection.name)
-            self.collection = None
-        self.chunks = []
-    
-    def similarity_search(self, query: str, threshold: float = 0.7) -> List[Dict[str, Any]]:
+    def update_chunk_index(self, chunks: List[Dict[str, Any]]) -> None:
         """
-        Perform similarity search with threshold filtering
+        Update the chunk index with new document chunks.
+        
+        Args:
+            chunks: New document chunks to index
+        """
+        # Clear existing collection
+        if self.collection:
+            self.collection.delete()
+        
+        # Re-index with new chunks
+        self.index_document_chunks(chunks)
+    
+    def get_database_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics about the vector database.
+        
+        Returns:
+            Dictionary with database statistics
+        """
+        if not self.collection:
+            return {
+                'total_chunks': 0,
+                'collection_name': None,
+                'is_initialized': False
+            }
+        
+        try:
+            count = self.collection.count()
+            return {
+                'total_chunks': count,
+                'collection_name': self.collection.name,
+                'is_initialized': True
+            }
+        except:
+            return {
+                'total_chunks': 0,
+                'collection_name': None,
+                'is_initialized': False
+            }
+    
+    def clear_database(self) -> None:
+        """Clear all data from the vector database."""
+        if self.collection:
+            self.collection.delete()
+            self.collection = None
+        self.document_chunks = []
+    
+    def perform_semantic_search(self, query: str, top_k: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Perform semantic search with additional metadata.
         
         Args:
             query: Search query
-            threshold: Minimum similarity threshold
+            top_k: Number of results to return
             
         Returns:
-            List of chunks above the similarity threshold
+            List of search results with enhanced metadata
         """
-        all_chunks = self.search_relevant_chunks(query, top_k=len(self.chunks))
+        relevant_chunks = self.find_relevant_chunks(query, top_k)
         
-        filtered_chunks = []
-        for chunk in all_chunks:
-            similarity_score = 1 - chunk['distance']  # Convert distance to similarity
-            if similarity_score >= threshold:
-                chunk['similarity_score'] = similarity_score
-                filtered_chunks.append(chunk)
+        # Enhance results with additional information
+        enhanced_results = []
+        for chunk in relevant_chunks:
+            enhanced_chunk = {
+                **chunk,
+                'relevance_score': 1.0 - chunk.get('similarity_score', 0.0),
+                'content_preview': chunk['content'][:200] + "..." if len(chunk['content']) > 200 else chunk['content']
+            }
+            enhanced_results.append(enhanced_chunk)
         
-        return filtered_chunks
+        return enhanced_results
     
-    def get_keyword_matches(self, query: str) -> List[Dict[str, Any]]:
+    def find_keyword_matches(self, keywords: List[str]) -> List[Dict[str, Any]]:
         """
-        Find chunks that match keywords from the query
+        Find chunks that contain specific keywords.
         
         Args:
-            query: User query
+            keywords: List of keywords to search for
             
         Returns:
-            List of chunks with keyword matches
+            List of chunks containing the keywords
         """
-        query_keywords = self._extract_keywords(query.lower())
-        matching_chunks = []
+        if not self.collection:
+            return []
         
-        for chunk in self.chunks:
-            chunk_keywords = [kw.lower() for kw in chunk['semantic_keywords']]
-            matches = set(query_keywords) & set(chunk_keywords)
+        # Create a query from keywords
+        query = " ".join(keywords)
+        
+        # Search for chunks containing these keywords
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=len(self.document_chunks)
+        )
+        
+        keyword_matches = []
+        for i in range(len(results['documents'][0])):
+            chunk_content = results['documents'][0][i]
             
-            if matches:
-                chunk_copy = chunk.copy()
-                chunk_copy['keyword_matches'] = list(matches)
-                chunk_copy['match_count'] = len(matches)
-                matching_chunks.append(chunk_copy)
+            # Check if all keywords are present
+            if all(keyword.lower() in chunk_content.lower() for keyword in keywords):
+                chunk_data = {
+                    'content': chunk_content,
+                    'metadata': results['metadatas'][0][i],
+                    'id': results['ids'][0][i],
+                    'keyword_matches': [kw for kw in keywords if kw.lower() in chunk_content.lower()]
+                }
+                keyword_matches.append(chunk_data)
         
-        return sorted(matching_chunks, key=lambda x: x['match_count'], reverse=True)
+        return keyword_matches
     
-    def _extract_keywords(self, text: str) -> List[str]:
-        """Extract keywords from text"""
+    def _extract_search_keywords(self, text: str) -> List[str]:
+        """
+        Extract keywords from text for search optimization.
+        
+        Args:
+            text: Text to extract keywords from
+            
+        Returns:
+            List of extracted keywords
+        """
+        # Simple keyword extraction - can be enhanced
         words = text.lower().split()
-        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'what', 'how', 'why', 'when', 'where', 'who'}
+        
+        # Remove common stop words
+        stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'what', 'how', 'why', 'when', 'where', 'who', 'which', 'that', 'this'
+        }
+        
         keywords = [word for word in words if word not in stop_words and len(word) > 2]
-        return keywords
+        
+        # Return unique keywords
+        return list(set(keywords))
