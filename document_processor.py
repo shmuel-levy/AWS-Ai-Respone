@@ -4,7 +4,7 @@ Handles automatic document segmentation into 18 parts with semantic analysis
 """
 import os
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import hashlib
 from sentence_transformers import SentenceTransformer
@@ -15,57 +15,90 @@ from config import Config
 
 
 class DocumentProcessor:
-    """Handles document processing and segmentation"""
+    """
+    Handles document processing, segmentation, and semantic analysis.
+    
+    This class is responsible for:
+    - Loading documents from various formats (PDF, TXT)
+    - Segmenting documents into 18 semantically meaningful chunks
+    - Extracting keywords and metadata
+    - Managing document change detection
+    """
     
     def __init__(self):
-        """Initialize the document processor"""
+        """Initialize the document processor with embedding model"""
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.chunks = []
+        self.document_chunks = []
         self.chunk_embeddings = []
         self.document_hash = None
         
-    def load_document(self, file_path: str) -> str:
+    def process_document(self, file_path: str) -> List[Dict[str, Any]]:
         """
-        Load document from file (supports PDF and text files)
+        Main method to process a document from file to segmented chunks.
+        
+        Args:
+            file_path: Path to the document file (PDF or TXT)
+            
+        Returns:
+            List of document chunks with metadata
+            
+        Raises:
+            FileNotFoundError: If document file doesn't exist
+            ValueError: If document content cannot be extracted
+        """
+        # Load document content
+        content = self._extract_document_content(file_path)
+        
+        # Store document hash for change detection
+        self.document_hash = self._calculate_content_hash(content)
+        
+        # Segment document into chunks
+        self.document_chunks = self._create_semantic_chunks(content)
+        
+        return self.document_chunks
+    
+    def _extract_document_content(self, file_path: str) -> str:
+        """
+        Extract text content from document file.
         
         Args:
             file_path: Path to the document file
             
         Returns:
             Document content as string
+            
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            ValueError: If content cannot be extracted
         """
         file_path = Path(file_path)
         
         if not file_path.exists():
             raise FileNotFoundError(f"Document not found: {file_path}")
         
-        # Check file extension
+        # Handle different file types
         if file_path.suffix.lower() == '.pdf':
-            content = self._load_pdf(file_path)
+            return self._extract_pdf_content(file_path)
         else:
-            # Assume text file
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            
-        # Store document hash for change detection
-        self.document_hash = self._calculate_hash(content)
-        
-        return content
+            return self._extract_text_content(file_path)
     
-    def _load_pdf(self, file_path: Path) -> str:
+    def _extract_pdf_content(self, file_path: Path) -> str:
         """
-        Load content from PDF file
+        Extract text content from PDF file using multiple methods.
         
         Args:
             file_path: Path to PDF file
             
         Returns:
             PDF content as string
+            
+        Raises:
+            ValueError: If content cannot be extracted
         """
         content = ""
         
+        # Try pdfplumber first (better text extraction)
         try:
-            # Try using pdfplumber first (better text extraction)
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
                     page_text = page.extract_text()
@@ -75,21 +108,37 @@ class DocumentProcessor:
             print(f"pdfplumber failed, trying PyPDF2: {e}")
             
             # Fallback to PyPDF2
-            with open(file_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
-                for page in pdf_reader.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        content += page_text + "\n"
+            try:
+                with open(file_path, 'rb') as file:
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    for page in pdf_reader.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            content += page_text + "\n"
+            except Exception as e2:
+                raise ValueError(f"Failed to extract PDF content: {e2}")
         
         if not content.strip():
             raise ValueError(f"Could not extract text from PDF: {file_path}")
         
         return content
     
-    def segment_document(self, content: str) -> List[Dict[str, Any]]:
+    def _extract_text_content(self, file_path: Path) -> str:
         """
-        Segment document into 18 parts using semantic analysis
+        Extract content from text file.
+        
+        Args:
+            file_path: Path to text file
+            
+        Returns:
+            Text content as string
+        """
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    
+    def _create_semantic_chunks(self, content: str) -> List[Dict[str, Any]]:
+        """
+        Create semantically meaningful document chunks.
         
         Args:
             content: Document content
@@ -98,33 +147,30 @@ class DocumentProcessor:
             List of document chunks with metadata
         """
         # Clean and preprocess content
-        cleaned_content = self._preprocess_content(content)
+        cleaned_content = self._clean_document_content(content)
         
         # Split into sentences
-        sentences = self._split_into_sentences(cleaned_content)
+        sentences = self._extract_sentences(cleaned_content)
         
         # Create initial chunks based on size
-        initial_chunks = self._create_initial_chunks(sentences)
+        initial_chunks = self._create_size_based_chunks(sentences)
         
         # Optimize chunks to exactly 18 parts using semantic similarity
-        optimized_chunks = self._optimize_to_18_chunks(initial_chunks)
+        optimized_chunks = self._optimize_chunk_count(initial_chunks)
         
         # Create chunk metadata
-        self.chunks = []
-        for i, chunk in enumerate(optimized_chunks):
-            chunk_data = {
-                'id': i,
-                'content': chunk,
-                'length': len(chunk),
-                'word_count': len(chunk.split()),
-                'semantic_keywords': self._extract_keywords(chunk)
-            }
-            self.chunks.append(chunk_data)
-        
-        return self.chunks
+        return self._create_chunk_metadata(optimized_chunks)
     
-    def _preprocess_content(self, content: str) -> str:
-        """Clean and preprocess document content"""
+    def _clean_document_content(self, content: str) -> str:
+        """
+        Clean and preprocess document content.
+        
+        Args:
+            content: Raw document content
+            
+        Returns:
+            Cleaned content
+        """
         # Remove extra whitespace
         content = re.sub(r'\s+', ' ', content)
         
@@ -133,18 +179,32 @@ class DocumentProcessor:
         
         return content.strip()
     
-    def _split_into_sentences(self, content: str) -> List[str]:
-        """Split content into sentences"""
+    def _extract_sentences(self, content: str) -> List[str]:
+        """
+        Extract sentences from document content.
+        
+        Args:
+            content: Document content
+            
+        Returns:
+            List of sentences
+        """
         # Split by sentence endings
         sentences = re.split(r'[.!?]+', content)
         
         # Filter out empty sentences
-        sentences = [s.strip() for s in sentences if s.strip()]
-        
-        return sentences
+        return [s.strip() for s in sentences if s.strip()]
     
-    def _create_initial_chunks(self, sentences: List[str]) -> List[str]:
-        """Create initial chunks based on size constraints"""
+    def _create_size_based_chunks(self, sentences: List[str]) -> List[str]:
+        """
+        Create initial chunks based on size constraints.
+        
+        Args:
+            sentences: List of sentences
+            
+        Returns:
+            List of initial chunks
+        """
         chunks = []
         current_chunk = []
         current_size = 0
@@ -167,17 +227,33 @@ class DocumentProcessor:
         
         return chunks
     
-    def _optimize_to_18_chunks(self, initial_chunks: List[str]) -> List[str]:
-        """Optimize chunks to exactly 18 parts using semantic similarity"""
+    def _optimize_chunk_count(self, initial_chunks: List[str]) -> List[str]:
+        """
+        Optimize chunks to exactly 18 parts using semantic similarity.
+        
+        Args:
+            initial_chunks: List of initial chunks
+            
+        Returns:
+            List of optimized chunks
+        """
         if len(initial_chunks) <= Config.MAX_CHUNKS:
             # If we have fewer chunks than needed, split larger chunks
-            return self._expand_to_18_chunks(initial_chunks)
+            return self._expand_chunks_to_target_count(initial_chunks)
         else:
             # If we have more chunks than needed, merge similar chunks
-            return self._merge_to_18_chunks(initial_chunks)
+            return self._merge_chunks_to_target_count(initial_chunks)
     
-    def _expand_to_18_chunks(self, chunks: List[str]) -> List[str]:
-        """Expand chunks to exactly 18 parts"""
+    def _expand_chunks_to_target_count(self, chunks: List[str]) -> List[str]:
+        """
+        Expand chunks to exactly 18 parts by splitting large chunks.
+        
+        Args:
+            chunks: List of chunks
+            
+        Returns:
+            List of expanded chunks
+        """
         result = []
         
         for chunk in chunks:
@@ -208,8 +284,16 @@ class DocumentProcessor:
         
         return result[:Config.MAX_CHUNKS]
     
-    def _merge_to_18_chunks(self, chunks: List[str]) -> List[str]:
-        """Merge chunks to exactly 18 parts using semantic similarity"""
+    def _merge_chunks_to_target_count(self, chunks: List[str]) -> List[str]:
+        """
+        Merge chunks to exactly 18 parts using semantic similarity clustering.
+        
+        Args:
+            chunks: List of chunks
+            
+        Returns:
+            List of merged chunks
+        """
         # Calculate embeddings for all chunks
         embeddings = self.embedding_model.encode(chunks)
         
@@ -234,8 +318,16 @@ class DocumentProcessor:
         return result
     
     def _split_large_chunk(self, chunk: str) -> List[str]:
-        """Split a large chunk into smaller parts"""
-        sentences = self._split_into_sentences(chunk)
+        """
+        Split a large chunk into smaller parts.
+        
+        Args:
+            chunk: Large chunk to split
+            
+        Returns:
+            List of smaller chunks
+        """
+        sentences = self._extract_sentences(chunk)
         sub_chunks = []
         current_sub_chunk = []
         current_size = 0
@@ -256,52 +348,122 @@ class DocumentProcessor:
         
         return sub_chunks
     
-    def _extract_keywords(self, text: str) -> List[str]:
-        """Extract semantic keywords from text"""
+    def _create_chunk_metadata(self, chunks: List[str]) -> List[Dict[str, Any]]:
+        """
+        Create metadata for document chunks.
+        
+        Args:
+            chunks: List of chunk content
+            
+        Returns:
+            List of chunks with metadata
+        """
+        chunk_data = []
+        for i, chunk in enumerate(chunks):
+            chunk_info = {
+                'id': i,
+                'content': chunk,
+                'length': len(chunk),
+                'word_count': len(chunk.split()),
+                'semantic_keywords': self._extract_semantic_keywords(chunk)
+            }
+            chunk_data.append(chunk_info)
+        
+        return chunk_data
+    
+    def _extract_semantic_keywords(self, text: str) -> List[str]:
+        """
+        Extract semantic keywords from text.
+        
+        Args:
+            text: Text to extract keywords from
+            
+        Returns:
+            List of keywords
+        """
         # Simple keyword extraction - can be enhanced with more sophisticated methods
         words = text.lower().split()
         
         # Remove common stop words
-        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+        stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those'
+        }
         keywords = [word for word in words if word not in stop_words and len(word) > 3]
         
         # Return top 5 most frequent keywords
         from collections import Counter
         return [word for word, _ in Counter(keywords).most_common(5)]
     
-    def _calculate_hash(self, content: str) -> str:
-        """Calculate hash of document content for change detection"""
+    def _calculate_content_hash(self, content: str) -> str:
+        """
+        Calculate hash of document content for change detection.
+        
+        Args:
+            content: Document content
+            
+        Returns:
+            MD5 hash of content
+        """
         return hashlib.md5(content.encode()).hexdigest()
     
-    def has_changed(self, content: str) -> bool:
-        """Check if document content has changed"""
-        current_hash = self._calculate_hash(content)
+    def is_document_modified(self, content: str) -> bool:
+        """
+        Check if document content has been modified.
+        
+        Args:
+            content: Current document content
+            
+        Returns:
+            True if document has changed, False otherwise
+        """
+        current_hash = self._calculate_content_hash(content)
         return current_hash != self.document_hash
     
     def get_chunk_embeddings(self) -> List[List[float]]:
-        """Get embeddings for all chunks"""
-        if not self.chunks:
+        """
+        Get embeddings for all document chunks.
+        
+        Returns:
+            List of chunk embeddings
+        """
+        if not self.document_chunks:
             return []
         
-        chunk_texts = [chunk['content'] for chunk in self.chunks]
+        chunk_texts = [chunk['content'] for chunk in self.document_chunks]
         return self.embedding_model.encode(chunk_texts).tolist()
     
-    def save_chunks(self, output_dir: str = None):
-        """Save processed chunks to files"""
+    def save_chunks_to_files(self, output_dir: Optional[str] = None) -> None:
+        """
+        Save processed chunks to individual files.
+        
+        Args:
+            output_dir: Directory to save chunks (defaults to Config.DATA_DIR)
+        """
         if output_dir is None:
             output_dir = Config.DATA_DIR
         
         os.makedirs(output_dir, exist_ok=True)
         
-        for chunk in self.chunks:
+        for chunk in self.document_chunks:
             filename = f"chunk_{chunk['id']:02d}.txt"
             filepath = os.path.join(output_dir, filename)
             
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(chunk['content'])
     
-    def load_chunks(self, input_dir: str = None) -> List[Dict[str, Any]]:
-        """Load processed chunks from files"""
+    def load_chunks_from_files(self, input_dir: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Load processed chunks from individual files.
+        
+        Args:
+            input_dir: Directory to load chunks from (defaults to Config.DATA_DIR)
+            
+        Returns:
+            List of loaded chunks with metadata
+        """
         if input_dir is None:
             input_dir = Config.DATA_DIR
         
@@ -323,9 +485,9 @@ class DocumentProcessor:
                 'content': content,
                 'length': len(content),
                 'word_count': len(content.split()),
-                'semantic_keywords': self._extract_keywords(content)
+                'semantic_keywords': self._extract_semantic_keywords(content)
             }
             chunks.append(chunk_data)
         
-        self.chunks = chunks
+        self.document_chunks = chunks
         return chunks
