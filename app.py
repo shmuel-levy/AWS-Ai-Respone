@@ -1,6 +1,6 @@
 """
 Streamlit Web Application for Document Q&A System
-Main interface for users to ask questions about documents
+Main interface for users to ask questions about documents using AI-powered search
 """
 import streamlit as st
 import os
@@ -11,119 +11,145 @@ from gemini_client import GeminiClient
 from config import Config
 
 
-def initialize_session_state():
-    """Initialize session state variables"""
+def initialize_application_state():
+    """Initialize Streamlit session state variables for the application."""
     if 'document_loaded' not in st.session_state:
         st.session_state.document_loaded = False
-    if 'processor' not in st.session_state:
-        st.session_state.processor = None
+    if 'document_processor' not in st.session_state:
+        st.session_state.document_processor = None
     if 'rag_engine' not in st.session_state:
         st.session_state.rag_engine = None
     if 'gemini_client' not in st.session_state:
         st.session_state.gemini_client = None
 
 
-def load_document(file_path: str):
-    """Load and process document"""
+def process_uploaded_document(file_path: str):
+    """
+    Process uploaded document and create semantic chunks.
+    
+    Args:
+        file_path: Path to the uploaded document
+        
+    Returns:
+        List of document chunks with metadata, or None if processing fails
+    """
     try:
         processor = DocumentProcessor()
-        content = processor.load_document(file_path)
-        chunks = processor.segment_document(content)
+        chunks = processor.process_document(file_path)
         
-        st.session_state.processor = processor
+        st.session_state.document_processor = processor
         st.session_state.document_loaded = True
         
         return chunks
     except Exception as e:
-        st.error(f"Error loading document: {str(e)}")
+        st.error(f"Error processing document: {str(e)}")
         return None
 
 
-def setup_rag_engine(chunks):
-    """Setup RAG engine with document chunks"""
+def setup_retrieval_system(chunks):
+    """
+    Setup RAG engine with processed document chunks.
+    
+    Args:
+        chunks: List of document chunks to index
+        
+    Returns:
+        True if setup successful, False otherwise
+    """
     try:
         rag_engine = RAGEngine()
-        rag_engine.add_chunks(chunks)
+        rag_engine.index_document_chunks(chunks)
         st.session_state.rag_engine = rag_engine
         return True
     except Exception as e:
-        st.error(f"Error setting up RAG engine: {str(e)}")
+        st.error(f"Error setting up retrieval system: {str(e)}")
         return False
 
 
-def setup_gemini_client():
-    """Setup Gemini AI client"""
+def setup_ai_client():
+    """
+    Setup Gemini AI client for answer generation.
+    
+    Returns:
+        True if setup successful, False otherwise
+    """
     try:
         client = GeminiClient()
         st.session_state.gemini_client = client
         return True
     except Exception as e:
-        st.error(f"Error setting up Gemini client: {str(e)}")
+        st.error(f"Error setting up AI client: {str(e)}")
         return False
 
 
-def process_query(query: str):
-    """Process user query and generate answer"""
+def generate_answer_for_query(query: str):
+    """
+    Generate answer for user query using RAG system.
+    
+    Args:
+        query: User's question
+        
+    Returns:
+        Tuple of (answer, context) or error message
+    """
     if not st.session_state.rag_engine or not st.session_state.gemini_client:
-        return "System not properly initialized."
+        return "System not properly initialized.", ""
     
     try:
-        # Get relevant context
-        context = st.session_state.rag_engine.get_context_for_query(query)
+        # Get relevant context from document
+        context = st.session_state.rag_engine.build_query_context(query)
         
         if not context:
-            return "I apologize, I don't know how to answer this question."
+            return "I apologize, I don't know how to answer this question.", ""
         
-        # Generate answer
-        answer = st.session_state.gemini_client.generate_answer(query, context)
+        # Generate answer using AI
+        answer = st.session_state.gemini_client.generate_answer_from_context(query, context)
         
         return answer, context
     except Exception as e:
         return f"Error processing query: {str(e)}", ""
 
 
-def main():
-    """Main application function"""
+def setup_page_configuration():
+    """Configure Streamlit page settings and load external CSS files."""
     st.set_page_config(
         page_title="Document Q&A System",
         page_icon="📚",
-        layout="wide"
+        layout="wide",
+        initial_sidebar_state="expanded"
     )
-    
-    # Add CSS for RTL support
-    st.markdown("""
-    <style>
-    .rtl-text {
-        direction: rtl;
-        text-align: right;
-        unicode-bidi: bidi-override;
-    }
-    .hebrew-text {
-        direction: rtl;
-        text-align: right;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        unicode-bidi: embed;
-    }
-    .hebrew-answer {
-        direction: rtl;
-        text-align: right;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        unicode-bidi: embed;
-        line-height: 1.6;
-    }
-    .mixed-text {
-        unicode-bidi: embed;
-        text-align: left;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    st.title("📚 Document Q&A System")
-    st.markdown("Ask questions about your documents using AI-powered search")
-    
-    initialize_session_state()
-    
-    # Sidebar for document upload
+
+    # Load external CSS files
+    load_css_files()
+
+
+def load_css_files():
+    """Load external CSS files for styling."""
+    try:
+        # Load main CSS
+        with open('styles/main.css', 'r', encoding='utf-8') as f:
+            main_css = f.read()
+        
+        # Load RTL CSS
+        with open('styles/rtl.css', 'r', encoding='utf-8') as f:
+            rtl_css = f.read()
+        
+        # Apply CSS
+        st.markdown(f"""
+            <style>
+            {main_css}
+            {rtl_css}
+            </style>
+        """, unsafe_allow_html=True)
+        
+    except FileNotFoundError as e:
+        st.error(f"CSS file not found: {e}")
+    except Exception as e:
+        st.error(f"Error loading CSS files: {e}")
+
+
+def render_document_upload_section():
+    """Render the document upload section in the sidebar."""
     with st.sidebar:
         st.header("📄 Document Upload")
         
@@ -145,20 +171,22 @@ def main():
             
             # Process document
             with st.spinner("Processing document..."):
-                chunks = load_document(str(file_path))
+                chunks = process_uploaded_document(str(file_path))
                 
                 if chunks:
-                    if setup_rag_engine(chunks):
+                    if setup_retrieval_system(chunks):
                         st.success(f"Document processed into {len(chunks)} chunks")
                         
-                        if setup_gemini_client():
+                        if setup_ai_client():
                             st.success("AI system ready!")
                         else:
                             st.warning("Gemini AI not available - check API key")
                     else:
-                        st.error("Failed to setup RAG engine")
-    
-    # Main content area
+                        st.error("Failed to setup retrieval system")
+
+
+def render_query_interface():
+    """Render the main query interface."""
     if st.session_state.document_loaded:
         st.header("❓ Ask Questions")
         
@@ -171,7 +199,7 @@ def main():
         if st.button("Ask Question", type="primary"):
             if query:
                 with st.spinner("Generating answer..."):
-                    answer, context = process_query(query)
+                    answer, context = generate_answer_for_query(query)
                 
                 # Display answer
                 st.subheader("🤖 Answer")
@@ -192,17 +220,42 @@ def main():
             else:
                 st.warning("Please enter a question")
     else:
-        st.info("👆 Please upload a document to get started")
-        
-        # Show sample questions
-        st.subheader("💡 Example Questions")
-        st.markdown("""
-        Once you upload a document, you can ask questions like:
-        - What is the main topic of this document?
-        - Can you summarize the key points?
-        - What are the important dates mentioned?
-        - Who are the main people discussed?
-        """)
+        render_welcome_screen()
+
+
+def render_welcome_screen():
+    """Render the welcome screen when no document is loaded."""
+    st.info("👆 Please upload a document to get started")
+    
+    # Show sample questions
+    st.subheader("💡 Example Questions")
+    st.markdown("""
+    Once you upload a document, you can ask questions like:
+    - What is the main topic of this document?
+    - Can you summarize the key points?
+    - What are the important dates mentioned?
+    - Who are the main people discussed?
+    - What are the practical examples and implementation details?
+    """)
+
+
+def main():
+    """Main application function."""
+    # Setup page configuration
+    setup_page_configuration()
+    
+    # Display main header
+    st.markdown('<h1 class="main-header">📚 Document Q&A System</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Ask questions about your documents using AI-powered search</p>', unsafe_allow_html=True)
+    
+    # Initialize application state
+    initialize_application_state()
+    
+    # Render document upload section
+    render_document_upload_section()
+    
+    # Render main query interface
+    render_query_interface()
 
 
 if __name__ == "__main__":
