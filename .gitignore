@@ -59,6 +59,9 @@ documents/*.txt
 # Streamlit
 .streamlit/
 
+# Styles folder (keep CSS files)
+# styles/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
