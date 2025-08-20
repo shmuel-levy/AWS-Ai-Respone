@@ -277,11 +277,10 @@ class TestRAGEngine(unittest.TestCase):
         with patch.object(self.rag_engine, 'find_relevant_chunks', return_value=mock_chunks):
             context = self.rag_engine.build_query_context("test query")
         
-        # Context should contain both chunks
+        # Context should contain both chunks with new format
         self.assertIn('First chunk content', context)
         self.assertIn('Second chunk content', context)
-        self.assertIn('Section 0:', context)
-        self.assertIn('Section 1:', context)
+        self.assertIn('---', context)  # Check for separator format
     
     def test_empty_context_handling(self):
         """Test handling of empty search results."""

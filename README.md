@@ -2,6 +2,12 @@
 
 A sophisticated **Retrieval-Augmented Generation (RAG)** system that enables intelligent document question-answering using Google's Gemini AI. This system automatically segments documents into semantically meaningful chunks and provides accurate, context-aware answers based solely on document content.
 
+## 🌐 Live Demo
+
+**Try the system online**: [Document Q&A System Live Demo](https://documents-reader-ai.streamlit.app/)
+
+*Note: The live demo uses in-memory storage (no persistence) and is suitable for testing and demonstration purposes.*
+
 ## 🚀 Features
 
 ### Core Functionality

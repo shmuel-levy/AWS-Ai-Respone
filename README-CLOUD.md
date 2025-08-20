@@ -1,5 +1,11 @@
 # 🚀 Streamlit Cloud Deployment Guide
 
+## 🌐 Live Demo
+
+**Try the system online**: [Document Q&A System Live Demo](https://documents-reader-ai.streamlit.app/)
+
+*Note: The live demo uses in-memory storage (no persistence) and is suitable for testing and demonstration purposes.*
+
 ## 📋 Overview
 
 This guide explains how to deploy the Document Q&A System to Streamlit Cloud, which has different requirements than local deployment.
